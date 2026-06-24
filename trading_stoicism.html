@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易中的情绪分离</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:       #0b0c0e;
+  --bg2:      #111316;
+  --bg3:      #181b20;
+  --bg4:      #1e222a;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.10);
+  --text:     #dde1ea;
+  --text2:    #858b99;
+  --text3:    #464c5a;
+  --gold:     #c9a84c;
+  --gold-dim: rgba(201,168,76,0.12);
+  --red:      #e05c5c;
+  --red-dim:  rgba(224,92,92,0.10);
+  --green:    #5ba68a;
+  --green-dim:rgba(91,166,138,0.10);
+  --mono:     'JetBrains Mono', monospace;
+  --serif:    'Noto Serif SC', serif;
+  --sans:     'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page wrapper ── */
+.page { max-width: 780px; margin: 0 auto; padding: 72px 28px 120px; }
+
+/* ── Hero ── */
+.hero { margin-bottom: 80px; border-bottom: 0.5px solid var(--border2); padding-bottom: 60px; }
+
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-tag::after {
+  content: '';
+  display: block;
+  height: 0.5px;
+  width: 48px;
+  background: var(--gold);
+  opacity: 0.4;
+}
+
+.hero-quote {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.45;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: 20px;
+}
+.hero-quote em {
+  font-style: normal;
+  color: var(--gold);
+  font-weight: 400;
+}
+
+.hero-attr {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+}
+
+.hero-intro {
+  margin-top: 32px;
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1.8;
+  max-width: 620px;
+}
+.hero-intro strong { color: var(--text); font-weight: 500; }
+
+/* ── Sections ── */
+.block { margin-bottom: 72px; }
+
+.block-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.block-title {
+  font-family: var(--serif);
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: 18px;
+  line-height: 1.3;
+}
+
+.block-body {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+.block-body strong { color: var(--text); font-weight: 500; }
+.block-body + .block-body { margin-top: -8px; }
+
+/* ── Pull quote ── */
+.pull {
+  border-left: 2px solid var(--gold);
+  margin: 28px 0;
+  padding: 16px 22px;
+  background: var(--gold-dim);
+  border-radius: 0 8px 8px 0;
+}
+.pull p {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 300;
+}
+.pull p em { font-style: normal; color: var(--gold); }
+
+/* ── Signal cards (the dangerous-safe split) ── */
+.signal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+@media (max-width: 540px) { .signal-grid { grid-template-columns: 1fr; } }
+
+.signal-card {
+  border-radius: 10px;
+  padding: 18px 20px;
+  border: 0.5px solid transparent;
+}
+.signal-card.danger {
+  background: var(--red-dim);
+  border-color: rgba(224,92,92,0.18);
+}
+.signal-card.safe {
+  background: var(--green-dim);
+  border-color: rgba(91,166,138,0.18);
+}
+.signal-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.signal-card.danger .signal-tag { color: var(--red); }
+.signal-card.safe  .signal-tag { color: var(--green); }
+
+.signal-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.signal-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+/* ── Practice steps ── */
+.steps { margin: 24px 0; display: flex; flex-direction: column; gap: 2px; }
+.step {
+  display: flex;
+  gap: 0;
+}
+.step-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 32px;
+}
+.step-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--bg4);
+  border: 1.5px solid var(--gold);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.step-connector {
+  width: 1px;
+  flex: 1;
+  background: var(--border2);
+  margin: 4px 0;
+  min-height: 20px;
+}
+.step:last-child .step-connector { display: none; }
+.step-content {
+  padding: 0 0 28px 12px;
+  flex: 1;
+}
+.step-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.step-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.step-body {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+.step-body strong { color: var(--text); font-weight: 500; }
+
+/* ── Mirror test (interactive self-check) ── */
+.mirror-wrap {
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 24px 0;
+}
+.mirror-header {
+  background: var(--bg3);
+  border-bottom: 0.5px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mirror-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.mirror-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.mirror-body { padding: 24px; }
+.mirror-intro {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 20px;
+  line-height: 1.65;
+}
+
+.q-list { display: flex; flex-direction: column; gap: 12px; }
+.q-item {
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.q-item:hover { border-color: var(--border2); }
+.q-item.checked { border-color: var(--gold); background: var(--gold-dim); }
+
+.q-row { display: flex; align-items: flex-start; gap: 12px; }
+.q-check {
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--text3);
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 11px;
+  color: transparent;
+}
+.q-item.checked .q-check {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg);
+}
+.q-text {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.q-item.checked .q-text { color: var(--text); }
+
+.mirror-result {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.65;
+  display: none;
+}
+.mirror-result.show { display: block; }
+.mirror-result.good { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(91,166,138,0.2); }
+.mirror-result.warn { background: var(--gold-dim); color: var(--gold); border: 0.5px solid rgba(201,168,76,0.2); }
+.mirror-result.bad  { background: var(--red-dim);  color: var(--red);   border: 0.5px solid rgba(224,92,92,0.2); }
+.mirror-result strong { font-weight: 500; }
+
+/* ── Compare table ── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 24px 0;
+}
+.compare-table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 14px;
+  border-bottom: 0.5px solid var(--border2);
+}
+.compare-table td {
+  padding: 13px 14px;
+  border-bottom: 0.5px solid var(--border);
+  color: var(--text2);
+  line-height: 1.55;
+  vertical-align: top;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--bg3); }
+.compare-table td:first-child { color: var(--text); font-weight: 500; }
+
+/* ── Final callout ── */
+.final {
+  margin-top: 60px;
+  padding: 32px 32px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: 14px;
+  text-align: center;
+}
+.final-serif {
+  font-family: var(--serif);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 300;
+  color: #fff;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+.final-serif em { color: var(--gold); font-style: normal; }
+.final-sub {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+/* ── Divider ── */
+.rule {
+  height: 0.5px;
+  background: var(--border);
+  margin: 60px 0;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">交易心理学 · 情绪分离</div>
+    <div class="hero-quote">
+      身边的人<em>永远不应该</em>看出<br>你今天是赚了，还是亏了。
+    </div>
+    <div class="hero-attr">— Jake，Tradeify Funded Podcast Ep.4</div>
+    <p class="hero-intro">
+      这句话不是在教你掩饰，而是在告诉你一个判断标准：<strong>如果你的状态能让别人看出当天的盈亏，说明你的情绪已经被市场控制了</strong>。这正是斯多葛主义（Stoicism）在交易中最核心的应用——把结果与情绪彻底分开。
+    </p>
+  </div>
+
+  <!-- Part 1: What -->
+  <div class="block">
+    <div class="block-label">是什么</div>
+    <div class="block-title">情绪分离不是"没感觉"，是"感觉不驱动行为"</div>
+    <p class="block-body">
+      很多人误解了情绪分离。它<strong>不是要你变成一台没有情感的机器</strong>，不是说你不能因为亏损而难受，也不是叫你假装每笔交易都无所谓。情绪是人类的基本功能，连最顶级的职业交易者也有情绪波动。
+    </p>
+    <p class="block-body">
+      情绪分离的真正含义是：<strong>你的决策流程不被当下的情绪状态所驱动</strong>。亏了三天，你可以感到失落，但你的仓位不因此改变。赚了一大笔，你可以高兴，但你的止损不因此放宽。情绪在你心里流动，但它不触碰你手上的按钮。
+    </p>
+
+    <div class="pull">
+      <p>斯多葛主义的核心主张：<em>你控制不了发生什么，但你始终控制自己如何回应。</em> 市场是你控制不了的。你的仓位大小、止损位置、是否进场，是你控制得了的。</p>
+    </div>
+
+    <div class="signal-grid">
+      <div class="signal-card danger">
+        <div class="signal-tag">⚠ 危险信号</div>
+        <div class="signal-title">情绪在驱动决策</div>
+        <div class="signal-desc">亏了之后加仓想追回来。赚了之后突然觉得今天"手感好"，多进几笔。止损被触发后因为愤怒再次进场。</div>
+      </div>
+      <div class="signal-card safe">
+        <div class="signal-tag">✓ 健康状态</div>
+        <div class="signal-title">情绪存在但不干预</div>
+        <div class="signal-desc">亏了感到不舒服，但按计划继续执行。赚了心情愉快，但仓位规则没有改变。情绪在你身体里，不在你的操作里。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- Part 2: Why -->
+  <div class="block">
+    <div class="block-label">为什么</div>
+    <div class="block-title">情绪为什么会摧毁交易者</div>
+    <p class="block-body">
+      交易的特殊性在于：<strong>它直接触发人类最原始的两种本能——恐惧和贪婪</strong>，而且触发频率极高，每一根K线都是一次刺激。人类的大脑本来不是为处理这种连续高频损益而进化的。
+    </p>
+    <p class="block-body">
+      当你感到恐惧时，大脑的杏仁核（amygdala）会绕过理性皮层直接发出信号：<strong>逃跑或反击</strong>。在交易里，这变成了"快平仓"或"加仓对抗市场"。当你感到贪婪时，多巴胺系统会让你高估自己、低估风险。这两种机制在进化史上帮助人类生存，在交易账户里只会制造灾难。
+    </p>
+
+    <div class="compare-table-wrap">
+    <table class="compare-table">
+      <tr>
+        <th>情绪触发</th>
+        <th>大脑的本能反应</th>
+        <th>在交易里的表现</th>
+        <th>实际后果</th>
+      </tr>
+      <tr>
+        <td>连续亏损</td>
+        <td>恐惧 → 逃跑或反击</td>
+        <td>平仓不该平的，或者加倍对赌</td>
+        <td>亏损扩大，违反风控规则</td>
+      </tr>
+      <tr>
+        <td>连续盈利</td>
+        <td>贪婪 → 高估自身能力</td>
+        <td>仓位变大，止损放宽</td>
+        <td>一笔大亏吞掉所有收益</td>
+      </tr>
+      <tr>
+        <td>止损被打</td>
+        <td>愤怒 → 报仇心理</td>
+        <td>立刻再次进场"追回来"</td>
+        <td>情绪交易，亏上加亏</td>
+      </tr>
+      <tr>
+        <td>踏空大行情</td>
+        <td>后悔 → FOMO</td>
+        <td>追高进场，接在最顶部</td>
+        <td>进场点极差，风险极高</td>
+      </tr>
+    </table>
+    </div>
+
+    <div class="pull">
+      <p>Jake 的观察：<em>一旦别人能从你的状态看出你今天的盈亏，说明亏的时候你亏太多了，或者赚的时候你过度自信了。两种都是危险信号。</em></p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- Part 3: How -->
+  <div class="block">
+    <div class="block-label">怎么做</div>
+    <div class="block-title">建立情绪分离的五个具体方法</div>
+    <p class="block-body">
+      情绪分离不是靠意志力"忍住"，而是通过<strong>结构性的习惯和框架</strong>，让你的系统不给情绪留下决策空间。以下是可以立刻开始实践的具体方法。
+    </p>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-line">
+          <div class="step-dot"></div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-num">方法 01</div>
+          <div class="step-title">盘前仪式：用锚点切换状态</div>
+          <div class="step-body">
+            在开始交易之前，建立一个固定的心理锚点——可以是一首特定的音乐、一杯咖啡、五分钟的冥想，或者回顾当天的交易计划。这个仪式的作用是<strong>强制你的大脑从"日常模式"切换到"执行模式"</strong>，同时把昨天的盈亏归零。
+            <br><br>Jake 的做法是每天开市前听 Mac Miller 的 <em>Best Day Ever</em>，把它作为心理信号：幸福不取决于今天的按钮结果。你不需要用同一首歌，但<strong>需要有一个属于自己的固定仪式</strong>，让每一天的交易从同一个情绪基准线出发。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-line">
+          <div class="step-dot"></div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-num">方法 02</div>
+          <div class="step-title">把规则写死，消灭决策空间</div>
+          <div class="step-body">
+            情绪最危险的时候是你"需要做决定"的时候。<strong>如果你的规则足够明确，就没有情绪插手的余地</strong>。每日亏损上限到了就立刻离场，不看市场，不思考"再等一下"。止损位置开仓前就设好，不在行情里临时移动。
+            <br><br>规则不是限制，是保护。当你情绪激动时，你根本不信任自己的判断——你只能信任之前冷静时写下的规则。<strong>把决策前置，执行时只需要服从，不需要思考。</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-line">
+          <div class="step-dot"></div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-num">方法 03</div>
+          <div class="step-title">达到每日上限后彻底断联</div>
+          <div class="step-body">
+            达到每日亏损上限停下来不难。<strong>难的是停下来之后不盯着市场</strong>。很多人关了交易界面，但还是一直看行情，一直在心里想"如果我没停，我现在应该赚多少了"。这种行为本质上是情绪在折磨你，而不是学习。
+            <br><br>Jake 的建议：<strong>收盘后给自己 20 分钟的情绪释放期</strong>，然后彻底断开。手机不谈交易，不看群，不分析。这不是逃避，而是让神经系统有机会复位，保证明天能以正常状态入场。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-line">
+          <div class="step-dot"></div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-num">方法 04</div>
+          <div class="step-title">重新定义"成功的一天"</div>
+          <div class="step-body">
+            如果你对"成功"的定义是"今天赚了多少钱"，你的情绪将永远被市场绑架。<strong>把成功重新定义为"是否严格按计划执行"</strong>——今天亏了 $200 但完全按规则来，这是成功的一天。今天赚了 $500 但有两笔是情绪进场，这是失败的一天。
+            <br><br>这个重新定义不是自我安慰，是统计学上正确的认知：<strong>你能控制的只有执行，结果是概率分布的输出</strong>。长期关注执行质量，期望值会自然兑现。
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-line">
+          <div class="step-dot"></div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-num">方法 05</div>
+          <div class="step-title">把交易当作工作，不是赌注</div>
+          <div class="step-body">
+            Jake 妈妈说过一句话点醒了他：<em>"这就是一份工作，工作当然有不好的时候。"</em> 这个框架极其有力量。你的同事、医生、工程师，没有人因为某天工作不顺利就在家里情绪崩溃，或者第二天加倍卖力来"追回今天的损失"。
+            <br><br><strong>工作有好有坏，这是正常的</strong>。把交易放进这个框架，你会发现情绪的燃点大幅降低——亏损不再是灾难，而是这行的正常成本。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- Part 4: Mirror test -->
+  <div class="block">
+    <div class="block-label">自我检测</div>
+    <div class="block-title">你现在的情绪分离做得怎么样？</div>
+    <p class="block-body">勾选以下符合你目前状态的描述，看看你处于哪个阶段。</p>
+
+    <div class="mirror-wrap">
+      <div class="mirror-header">
+        <div class="mirror-dot"></div>
+        <span class="mirror-label">情绪分离自检</span>
+      </div>
+      <div class="mirror-body">
+        <p class="mirror-intro">勾选所有符合你实际情况的选项（诚实作答，这只是你自己看的）</p>
+
+        <div class="q-list" id="q-list">
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">亏损的那天，我的家人或朋友能明显感觉到我情绪不好</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">我曾经在达到每日亏损上限后，因为觉得"快要止损了就放弃"而继续交易</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">连续亏损几天后，我会在之后的交易里不自觉地"想追回来"</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">连续盈利时，我会感到"今天手感好"，然后多做几笔或者仓位变大</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">有时候止损触发后，我会立刻"报复性"进场，想把亏损拿回来</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">今天赚钱了，我晚上的心情会明显比亏钱那天好很多</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">我能做到触发每日亏损上限后，彻底关掉平台，不再看行情</div>
+            </div>
+          </div>
+
+          <div class="q-item" onclick="toggle(this)">
+            <div class="q-row">
+              <div class="q-check">✓</div>
+              <div class="q-text">我有固定的盘前习惯/仪式，帮助我在进场前稳定状态</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mirror-result" id="mirror-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- Part 5: Common mistakes -->
+  <div class="block">
+    <div class="block-label">常见误区</div>
+    <div class="block-title">三个关于情绪分离的错误理解</div>
+
+    <div class="signal-grid" style="grid-template-columns: 1fr;">
+
+      <div class="signal-card danger" style="margin-bottom: 0;">
+        <div class="signal-tag">误区 01</div>
+        <div class="signal-title">"我要完全不在乎输赢"</div>
+        <div class="signal-desc" style="margin-top: 8px;">完全不在乎是不可能的，也不是目标。你应该在乎，因为在乎才能认真对待执行质量。区别在于：在乎的对象是<strong>执行是否正确</strong>，不是<strong>这笔钱赚没赚到</strong>。</div>
+      </div>
+
+      <div class="signal-card danger">
+        <div class="signal-tag">误区 02</div>
+        <div class="signal-title">"我只需要更努力地控制情绪"</div>
+        <div class="signal-desc" style="margin-top: 8px;">靠意志力压制情绪是最低效的方法，且极其耗损精力。真正有效的方式是<strong>设计结构</strong>：规则、流程、习惯，让情绪从一开始就没有机会插手决策。</div>
+      </div>
+
+      <div class="signal-card danger">
+        <div class="signal-tag">误区 03</div>
+        <div class="signal-title">"顶级交易者不会有情绪波动"</div>
+        <div class="signal-desc" style="margin-top: 8px;">Jake 明确说：连续亏损几天，他仍然会感到难受。他八年后的今天也有情绪。区别是他<strong>不让情绪进入执行层</strong>。情绪可以存在于你的内心，只要它不碰你的按钮。</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Final -->
+  <div class="final">
+    <div class="final-serif">情绪分离不是终点，<br>它是<em>让时间站在你这边</em>的前提条件。</div>
+    <p class="final-sub">你的系统需要足够多次执行才能让期望值兑现。每一次被情绪打断的执行，都是在缩短你给系统证明自己的时间。</p>
+  </div>
+
+</div>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('checked');
+  evaluate();
+}
+
+function evaluate() {
+  const items = document.querySelectorAll('.q-item');
+  const checked = document.querySelectorAll('.q-item.checked');
+  const result = document.getElementById('mirror-result');
+
+  if (checked.length === 0) {
+    result.className = 'mirror-result';
+    return;
+  }
+
+  // Questions 1-6 are "bad" indicators, 7-8 are "good" indicators
+  const bad  = [0,1,2,3,4,5];
+  const good = [6,7];
+
+  let badCount  = 0;
+  let goodCount = 0;
+
+  items.forEach((item, i) => {
+    if (item.classList.contains('checked')) {
+      if (bad.includes(i))  badCount++;
+      if (good.includes(i)) goodCount++;
+    }
+  });
+
+  result.classList.add('show');
+
+  if (badCount === 0 && goodCount >= 1) {
+    result.className = 'mirror-result show good';
+    result.innerHTML = `<strong>情绪分离做得很好。</strong> 你已经建立了不错的执行纪律。继续关注执行一致性，随着样本量积累，你的统计优势会持续显现。`;
+  } else if (badCount <= 2) {
+    result.className = 'mirror-result show warn';
+    result.innerHTML = `<strong>有一定意识，但仍有改善空间。</strong> 你已经识别到了部分情绪驱动行为。优先处理你勾选的那几项——每一项背后都有一个可以用规则代替情绪决策的地方。`;
+  } else if (badCount <= 4) {
+    result.className = 'mirror-result show warn';
+    result.innerHTML = `<strong>情绪对决策的影响较为明显。</strong> 建议从"把规则写死"和"盘后断联"开始，这两个方法最立竿见影。不要试图同时改变所有习惯，先选一个最容易的切入点。`;
+  } else {
+    result.className = 'mirror-result show bad';
+    result.innerHTML = `<strong>情绪目前是你交易中最大的风险因素。</strong> 在优化策略之前，先处理情绪结构。建议：① 严格设定每日亏损上限并坚决执行；② 建立盘前仪式；③ 把"今天按计划执行"作为唯一的成功定义。系统能不能盈利是之后的问题，先让自己能够一致地执行。`;
+  }
+}
+</script>
+
+</body>
+</html>
